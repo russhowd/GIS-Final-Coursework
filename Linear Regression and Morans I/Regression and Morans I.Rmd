@@ -1,0 +1,71 @@
+---
+title: "Linear Regression and Morans I test"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+# Import the needed packages
+library(rgdal)
+library(tidyverse)
+library(sf)
+library(ggplot2)
+library(broom)
+library(tmap)
+library(spdep)
+library(sp)
+
+
+# Import shapefile of census tracts that has all our key data attached to it
+DCSF <- st_read("Census_Tract_Combine_Final.shp")
+
+# Remove the census tracts that will be left out of analysis (tracts 6202 and 6804)
+DCSF <- DCSF[-c(73,79), ]
+
+# Create scatter plot to view the data - Diversity score (independent variable) and Change in Median Household Income 2010-2015 (dependent variable)
+qplot(Diversity, Change_201, data = DCSF, geom = "point") + stat_smooth(method="lm", se=FALSE, size=1)
+
+# Use function to fit to linear regrssion model
+model1 <- lm(Change_201 ~ Diversity, data = DCSF)
+
+# Write the regression results into a dataframe
+model1_res <- tidy(model1)
+
+# Examine the results
+summary(model1)
+
+
+# Examine the diagnostic plots to see if there is any patterning in the residuals
+plot(model1)
+
+
+# Save the residuals into to the dataframe
+DCSF$model1_resids <- model1$residuals
+
+# Plot the residuals
+tmap_mode("plot")
+
+qtm(DCSF, fill = "model1_resids")
+
+# Conduct a Moran's I test to see, statistically, if there is any autocorrelation of the residuals. First step is converting the dataframe to a spatial object.
+DCSP <- as(DCSF,"Spatial")
+
+# Next, calculate the centroids of all census tracts
+coordsW <- coordinates(DCSP)
+plot(coordsW)
+
+# Generate a spatial weights matrix of Queen's case neighbours
+DC_nb <- poly2nb(DCSP, queen=T)
+
+# Plot them to check accuracy
+plot(DC_nb, coordinates(coordsW), col="red")
+
+# Create a spatial weights object from these weights
+DC.lw <- nb2listw(DC_nb, style="C")
+
+# Run Moran's I test on the residuals
+moran.test(DCSP@data$model1_resids, DC.lw)
+
+```
+
