@@ -1,0 +1,52 @@
+---
+title: "Diversity Index Score and Level"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+---
+
+```{r}
+# Import the needed packages
+library(xlsx)
+
+# Read in CSV data. Data is the American Community Survey (ACS) 2015 5-year estimates.
+CenData <- read.csv(file="Transformed_Census_and_ACS_Data.csv", header=TRUE, sep=",")
+
+
+# Calculate the Diversity Index. To do so, square the percentage of each race/ethnic group (White, Black, American Indian, Asian, Hawaiian/Pacific Islander, Other, and Multiracial) and save it as a new column.
+CenData[26] <- (CenData[,5]/rowSums(CenData[,5:11]))^2 
+CenData[27] <- (CenData[,6]/rowSums(CenData[,5:11]))^2 
+CenData[28] <- (CenData[,7]/rowSums(CenData[,5:11]))^2 
+CenData[29] <- (CenData[,8]/rowSums(CenData[,5:11]))^2 
+CenData[30] <- (CenData[,9]/rowSums(CenData[,5:11]))^2 
+CenData[31] <- (CenData[,10]/rowSums(CenData[,5:11]))^2 
+CenData[32] <- (CenData[,11]/rowSums(CenData[,5:11]))^2 
+
+# Sum the squares, subtract by 1, and multiply by 100 to give a score between 0-100 for each census tract, and save as new Diversity Score column.
+CenData$Diversity<- (1-(rowSums(CenData[,26:32])))*100
+
+# Create low, medium, and high categories for the diversity scores based on quintiles. First create a function to assign the codes. 
+newvar<-0
+recode<-function(variable,high,medium,low){
+  newvar[variable<=high]<-"High"
+  newvar[variable<=medium]<-"Medium"
+  newvar[variable<=low]<-"Low"
+  return(newvar)
+}
+
+attach(CenData)
+
+# Find the quantiles to make the breaks by
+summary(Diversity) 
+
+
+# Use the function to create a new column of codes for the Diversity Score Level
+CenData$Div_code <- recode(Diversity,72.94,52.76,17.70)
+
+# Save results and export to Excel spreadsheet
+write.xlsx(CenData, "ACS_Census_Diversity_coded.xlsx")
+
+```
+
