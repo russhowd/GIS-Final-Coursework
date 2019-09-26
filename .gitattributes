@@ -1,2 +1,2 @@
 # to change language of repo 
-    *.ipynb linguist-language=Rmd
+    *.ipynb linguist-language=RMarkdown
